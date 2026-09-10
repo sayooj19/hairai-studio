@@ -108,7 +108,7 @@ from fastapi.responses import JSONResponse
 
 # Replace with your copied Hugging Face Access Token
 import os
-HF_API_TOKEN = os.getenv("HF_API_TOKEN", "your_fallback_key")
+HF_API_TOKEN = os.getenv("HF_API_TOKEN", "f_ZsJGbgqBcdXYiOSQDjfZUALXftjlcLApNH")
 
 # Updated Serverless Inference Router Endpoint
 API_URL = "https://router.huggingface.co/hf-inference/v1/images/generations"

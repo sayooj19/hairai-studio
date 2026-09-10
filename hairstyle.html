@@ -275,7 +275,7 @@
                 document.getElementById('aiBadge').innerText = "Generating AI Hair...";
                 document.getElementById('aiBadge').classList.remove('hidden');
 
-                const response = await fetch('http://127.0.0.1:8000/api/generate-hairstyle', {
+                const response = await fetch('https://hairai-backend.onrender.com/api/generate-hairstyle', {
                     method: 'POST',
                     body: formData
                 });
