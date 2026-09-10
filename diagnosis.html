@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HairAI - Complete ML Diagnostic & Safety Checker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
+
+    <!-- Header / Navbar -->
+    <header class="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="index.html" class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/20">H</div>
+                <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">HairAI Studio</span>
+            </a>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
+                <a href="index.html" class="hover:text-white transition-colors">Home</a>
+                <a href="diagnosis.html" class="text-indigo-400 transition-colors">Hair Checkup</a>
+                <a href="hairstyle.html" class="hover:text-white transition-colors">AI Hairstyle Try-On</a>
+            </nav>
+            <div>
+                <a href="hairstyle.html" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium px-4 py-2 rounded-xl border border-slate-700 transition-all">Try Hairstyle AI</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Section -->
+    <main class="flex-grow max-w-6xl mx-auto w-full px-6 py-12">
+        <div class="text-center max-w-2xl mx-auto mb-10">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">Complete Hair Health & Safety Check 💇‍♂️</h1>
+            <p class="text-slate-400 text-sm md:text-base">Upload a scalp photo, share your health inputs, and get ML predictions along with essential safety precautions.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- FORM SECTION (LEFT / TOP) -->
+            <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl">
+                <form id="diagnosisForm" onsubmit="handleDiagnosis(event)" class="space-y-5">
+                    
+                    <!-- 1. Scalp Photo Check -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-200 mb-1">1. Scalp or Root Photo Analysis</label>
+                        <p class="text-[11px] text-slate-400 mb-2">Upload a close-up photo of your scalp or parting for visual assessment.</p>
+                        <div class="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-950/50" onclick="document.getElementById('scalpPhoto').click()">
+                            <svg class="w-7 h-7 text-slate-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span id="fileName" class="text-xs text-indigo-400 font-medium">Click here to upload scalp photo</span>
+                            <input type="file" id="scalpPhoto" name="scalpPhoto" accept="image/*" class="hidden" onchange="previewScalpPhoto(this)">
+                        </div>
+                        <!-- Preview Box -->
+                        <div id="imagePreviewContainer" class="hidden mt-3 flex items-center space-x-3 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                            <img id="imagePreview" class="w-14 h-14 object-cover rounded-lg" alt="Scalp Preview">
+                            <div class="text-xs text-slate-300">
+                                <span class="font-bold block text-emerald-400">✓ Image Attached</span>
+                                <span class="text-[10px] text-slate-500">Photo will be processed with health parameters.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Age & Stress -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Age</label>
+                            <input type="number" id="age" min="10" max="100" value="25" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Stress Level</label>
+                            <select id="stress" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="Low">Low</option>
+                                <option value="Moderate" selected>Moderate</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 3. Genetics & Hormones -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Family Hair Loss Genetics?</label>
+                            <select id="genetics" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1">Hormonal Changes?</label>
+                            <select id="hormonal" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                                <option value="No">No</option>
+                                <option value="Yes">Yes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 4. Medical Conditions & Treatments -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Medical Conditions</label>
+                        <select id="medical" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <option value="No Data">None / No Data</option>
+                            <option value="Eczema">Eczema</option>
+                            <option value="Dermatosis">Dermatosis</option>
+                            <option value="Ringworm">Ringworm</option>
+                            <option value="Psoriasis">Psoriasis</option>
+                            <option value="Alopecia Areata ">Alopecia Areata</option>
+                            <option value="Scalp Infection">Scalp Infection</option>
+                            <option value="Seborrheic Dermatitis">Seborrheic Dermatitis</option>
+                            <option value="Thyroid Problems">Thyroid Problems</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Medications & Treatments</label>
+                        <select id="medications" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                            <option value="No Data">None / No Data</option>
+                            <option value="Antibiotics">Antibiotics</option>
+                            <option value="Antifungal Cream">Antifungal Cream</option>
+                            <option value="Accutane">Accutane</option>
+                            <option value="Steroids">Steroids</option>
+                            <option value="Rogaine">Rogaine</option>
+                            <option value="Blood Pressure Medication">Blood Pressure Medication</option>
+                        </select>
+                    </div>
+
+                    <!-- 5. Nutritional Deficiencies -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Nutritional Deficiencies</label>
+                        <div id="nutritionContainer" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-950 border border-slate-800 rounded-xl">
+                            <label class="flex items-center space-x-2 text-xs text-slate-300 p-1.5 hover:bg-slate-900 rounded-lg cursor-pointer">
+                                <input type="checkbox" name="nutrition" value="Iron deficiency" class="accent-indigo-500 rounded">
+                                <span>Iron Deficiency</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-xs text-slate-300 p-1.5 hover:bg-slate-900 rounded-lg cursor-pointer">
+                                <input type="checkbox" name="nutrition" value="Vitamin D Deficiency" class="accent-indigo-500 rounded">
+                                <span>Vitamin D Deficiency</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-xs text-slate-300 p-1.5 hover:bg-slate-900 rounded-lg cursor-pointer">
+                                <input type="checkbox" name="nutrition" value="Biotin Deficiency " class="accent-indigo-500 rounded">
+                                <span>Biotin Deficiency</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-xs text-slate-300 p-1.5 hover:bg-slate-900 rounded-lg cursor-pointer">
+                                <input type="checkbox" name="nutrition" value="Protein deficiency" class="accent-indigo-500 rounded">
+                                <span>Protein Deficiency</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-xs text-slate-300 p-1.5 hover:bg-slate-900 rounded-lg cursor-pointer">
+                                <input type="checkbox" name="nutrition" value="Zinc Deficiency" class="accent-indigo-500 rounded">
+                                <span>Zinc Deficiency</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-xs text-slate-300 p-1.5 hover:bg-slate-900 rounded-lg cursor-pointer">
+                                <input type="checkbox" name="nutrition" value="Magnesium deficiency" class="accent-indigo-500 rounded">
+                                <span>Magnesium Deficiency</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-xs text-slate-300 p-1.5 hover:bg-slate-900 rounded-lg cursor-pointer">
+                                <input type="checkbox" name="nutrition" value="Omega-3 fatty acids" class="accent-indigo-500 rounded">
+                                <span>Omega-3 Deficiency</span>
+                            </label>
+                            <label class="flex items-center space-x-2 text-xs text-slate-300 p-1.5 hover:bg-slate-900 rounded-lg cursor-pointer">
+                                <input type="checkbox" name="nutrition" value="Vitamin A Deficiency" class="accent-indigo-500 rounded">
+                                <span>Vitamin A Deficiency</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 6. Lifestyle Toggles -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <label class="border border-slate-800 bg-slate-950 rounded-xl p-2.5 flex items-center justify-between cursor-pointer">
+                            <span class="text-xs text-slate-300">Poor Hair Habits</span>
+                            <input type="checkbox" id="poorHabits" class="accent-indigo-500">
+                        </label>
+                        <label class="border border-slate-800 bg-slate-950 rounded-xl p-2.5 flex items-center justify-between cursor-pointer">
+                            <span class="text-xs text-slate-300">Environmental Stress</span>
+                            <input type="checkbox" id="environmental" class="accent-indigo-500">
+                        </label>
+                        <label class="border border-slate-800 bg-slate-950 rounded-xl p-2.5 flex items-center justify-between cursor-pointer">
+                            <span class="text-xs text-slate-300">Smoking</span>
+                            <input type="checkbox" id="smoking" class="accent-indigo-500">
+                        </label>
+                        <label class="border border-slate-800 bg-slate-950 rounded-xl p-2.5 flex items-center justify-between cursor-pointer">
+                            <span class="text-xs text-slate-300">Recent Weight Loss</span>
+                            <input type="checkbox" id="weightLoss" class="accent-indigo-500">
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2 text-sm mt-4">
+                        <span>✨ Analyze Scalp & Run ML Prediction</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- RESULTS DASHBOARD (RIGHT / BOTTOM) -->
+            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-bold mb-4 text-white flex items-center justify-between">
+                        <span>Diagnostic & Safety Report</span>
+                        <span id="statusBadge" class="hidden bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] px-2.5 py-1 rounded-full font-bold">Complete</span>
+                    </h2>
+
+                    <!-- Initial State -->
+                    <div id="emptyState" class="text-center py-12 text-slate-500">
+                        <div class="text-4xl mb-3">🩺</div>
+                        <p class="text-sm">Upload a photo and complete the checkup form to reveal your ML risk prediction & safety precautions!</p>
+                    </div>
+
+                    <!-- Results Content (Hidden by default) -->
+                    <div id="resultsContent" class="hidden space-y-5">
+                        
+                        <!-- Prediction Risk Card -->
+                        <div id="predictionCard" class="border rounded-2xl p-4 flex items-center justify-between bg-slate-950">
+                            <div>
+                                <span class="text-xs text-slate-400 block mb-1">Hair Loss Risk Evaluation</span>
+                                <span id="statusLabel" class="text-sm font-bold text-white">---</span>
+                            </div>
+                            <div id="riskScore" class="w-16 h-16 rounded-full border-4 flex items-center justify-center font-extrabold text-sm text-white">
+                                0%
+                            </div>
+                        </div>
+
+                        <!-- Image Status Badge -->
+                        <div id="imageStatusBox" class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center space-x-3 text-xs">
+                            <span class="text-lg">📷</span>
+                            <span id="imageStatusText" class="text-slate-300">Scalp photo verified.</span>
+                        </div>
+
+                        <!-- Easy Explanation -->
+                        <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4">
+                            <h3 class="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">💡 What does this mean?</h3>
+                            <p id="easyExplanation" class="text-xs text-slate-300 leading-relaxed">---</p>
+                        </div>
+
+                        <!-- Safety Precautions Section -->
+                        <div class="border border-amber-500/20 bg-amber-500/5 rounded-2xl p-4">
+                            <h3 class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center space-x-1">
+                                <span>⚠️ Important Safety Precautions</span>
+                            </h3>
+                            <ul id="safetyList" class="space-y-2 text-xs text-slate-300">
+                                <!-- Dynamic Safety Tips -->
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Footer Tip -->
+                <div class="mt-6 pt-4 border-t border-slate-800/60 text-[11px] text-slate-500">
+                    💡 **Disclaimer:** Machine learning predictions are for educational purposes. Consult a dermatologist or trichologist for medical diagnoses.
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+        <p>&copy; 2026 HairAI Studio. All rights reserved.</p>
+    </footer>
+
+    <!-- JS Integration -->
+    <script>
+        function previewScalpPhoto(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                    document.getElementById('fileName').innerText = "✓ " + input.files[0].name;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        async function handleDiagnosis(e) {
+            e.preventDefault();
+
+            // 1. Collect checked nutritional deficiencies
+            const checkedDeficiencies = Array.from(
+                document.querySelectorAll('input[name="nutrition"]:checked')
+            ).map(cb => cb.value);
+
+            // 2. Build JSON Payload
+            const payload = {
+                Genetics: document.getElementById('genetics').value,
+                Hormonal_Changes: document.getElementById('hormonal').value,
+                Medical_Conditions: document.getElementById('medical').value,
+                Medications_Treatments: document.getElementById('medications').value,
+                Nutritional_Deficiencies: checkedDeficiencies.length > 0 ? checkedDeficiencies : ["No Data"],
+                Stress: document.getElementById('stress').value,
+                Age: parseInt(document.getElementById('age').value) || 25,
+                Poor_Hair_Care_Habits: document.getElementById('poorHabits').checked ? "Yes" : "No",
+                Environmental_Factors: document.getElementById('environmental').checked ? "Yes" : "No",
+                Smoking: document.getElementById('smoking').checked ? "Yes" : "No",
+                Weight_Loss: document.getElementById('weightLoss').checked ? "Yes" : "No"
+            };
+
+            // 3. Construct FormData
+            const formData = new FormData();
+            formData.append('data_json', JSON.stringify(payload));
+            
+            // Grab photo file
+            const photoInput = document.getElementById('scalpPhoto');
+            if (photoInput && photoInput.files && photoInput.files.length > 0) {
+                formData.append('scalp_photo', photoInput.files[0], photoInput.files[0].name);
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/predict-complete', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // 4. Reveal Results
+                document.getElementById('emptyState').classList.add('hidden');
+                document.getElementById('resultsContent').classList.remove('hidden');
+                document.getElementById('statusBadge').classList.remove('hidden');
+
+                document.getElementById('statusLabel').innerText = data.status_label;
+                
+                const scoreCircle = document.getElementById('riskScore');
+                scoreCircle.innerText = data.risk_percentage;
+
+                const predCard = document.getElementById('predictionCard');
+                const safetyList = document.getElementById('safetyList');
+                safetyList.innerHTML = "";
+
+                const precautions = [];
+
+                if (data.hair_loss_predicted === 1) {
+                    scoreCircle.className = "w-16 h-16 rounded-full border-4 border-rose-500 flex items-center justify-center font-extrabold text-xs text-rose-400 bg-rose-500/10";
+                    predCard.className = "border border-rose-500/30 rounded-2xl p-4 flex items-center justify-between bg-slate-950";
+
+                    precautions.push("🧪 <b>Patch Test First:</b> Test new topical treatments on your inner arm for 24 hours prior to scalp application.");
+                    precautions.push("🚫 <b>Minimize High Heat:</b> Limit heat styling tools over 180°C (350°F) to prevent fiber structural failure.");
+                    precautions.push("☀️ <b>UV Scalp Defense:</b> Protect exposed scalp area with lightweight hats or specialized scalp UV spray.");
+                } else {
+                    scoreCircle.className = "w-16 h-16 rounded-full border-4 border-emerald-500 flex items-center justify-center font-extrabold text-xs text-emerald-400 bg-emerald-500/10";
+                    predCard.className = "border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between bg-slate-950";
+
+                    precautions.push("✨ <b>Scalp Balance:</b> Cleanse every 2-3 days using sulfate-free formulations to remove daily sebum.");
+                    precautions.push("💆‍♂️ <b>Gentle Handling:</b> Use wide-tooth combs on wet hair to prevent mechanical traction breakage.");
+                }
+
+                if (data.dietary_recommendations && data.dietary_recommendations.length > 0) {
+                    data.dietary_recommendations.forEach(tip => precautions.push(tip));
+                }
+
+                if (payload.Smoking === "Yes") {
+                    precautions.push("🚬 <b>Microcirculation Warning:</b> Smoking reduces vascular blood flow to hair follicles.");
+                }
+
+                if (payload.Stress === "High") {
+                    precautions.push("🧘‍♂️ <b>Stress Management:</b> High stress pushes follicles into premature resting phase. Prioritize sleep.");
+                }
+
+                precautions.forEach(tip => {
+                    const li = document.createElement('li');
+                    li.className = "leading-relaxed";
+                    li.innerHTML = tip;
+                    safetyList.appendChild(li);
+                });
+
+                // 5. Update Photo Verification Banner
+                const imgStatusText = document.getElementById('imageStatusText');
+                if (data.image_analysis && data.image_analysis.image_processed) {
+                    imgStatusText.innerText = "Photo verified (" + data.image_analysis.resolution + "): " + data.image_analysis.visual_flags.join(" ");
+                } else {
+                    imgStatusText.innerText = "No photo detected by backend. Evaluation calculated using health parameters.";
+                }
+
+                document.getElementById('easyExplanation').innerText = data.easy_explanation;
+
+            } catch (err) {
+                alert("Make sure your FastAPI server (main.py) is running on http://127.0.0.1:8000!");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HairAI - AI Hairstyle Studio & Barber Script</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col justify-between">
+
+    <!-- Header / Navbar -->
+    <header class="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="index.html" class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-xl shadow-lg shadow-indigo-500/20">H</div>
+                <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">HairAI Studio</span>
+            </a>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
+                <a href="index.html" class="hover:text-white transition-colors">Home</a>
+                <a href="diagnosis.html" class="hover:text-white transition-colors">Hair Checkup</a>
+                <a href="hairstyle.html" class="text-purple-400 transition-colors">AI Hairstyle Try-On</a>
+            </nav>
+            <div>
+                <a href="diagnosis.html" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-medium px-4 py-2 rounded-xl border border-slate-700 transition-all">Hair Diagnosis</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Section -->
+    <main class="flex-grow max-w-6xl mx-auto w-full px-6 py-12">
+        <div class="text-center max-w-2xl mx-auto mb-10">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-3">AI Hairstyle Studio 💈</h1>
+            <p class="text-slate-400 text-sm md:text-base">Upload your portrait or use real-time webcam try-on to simulate haircuts and generate technical scripts for your barber.</p>
+        </div>
+
+        <!-- Mode Toggle -->
+        <div class="flex justify-center mb-8">
+            <div class="bg-slate-900 border border-slate-800 p-1 rounded-2xl inline-flex space-x-2">
+                <button id="modePhotoBtn" onclick="switchMode('photo')" class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-purple-600 text-white shadow-lg shadow-purple-600/30">
+                    📸 AI Image Simulation
+                </button>
+                <button id="modeVideoBtn" onclick="switchMode('video')" class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white">
+                    📹 Live Webcam Try-On
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- INPUT CONTROLS (LEFT) -->
+            <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl">
+                
+                <!-- PHOTO UPLOAD MODE -->
+                <div id="photoModeContainer" class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-200 mb-1">1. Upload Your Selfie / Portrait</label>
+                        <div class="border-2 border-dashed border-slate-700 hover:border-purple-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-950/50" onclick="document.getElementById('userPortrait').click()">
+                            <svg class="w-7 h-7 text-slate-500 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span id="portraitFileName" class="text-xs text-purple-400 font-medium">Click to upload clear front-facing photo</span>
+                            <input type="file" id="userPortrait" accept="image/*" class="hidden" onchange="previewPortrait(this)">
+                        </div>
+                    </div>
+
+                    <!-- Preset Target Hairstyles -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-200 mb-2">2. Choose Target Hairstyle</label>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <button type="button" onclick="selectPreset('Low Skin Fade with Textured Crop', '1-inch textured crop top, #0 to #2 low skin fade')" class="bg-slate-950 border border-slate-800 p-3 rounded-xl hover:border-purple-500 text-left transition-all">
+                                <span class="font-bold text-slate-200 block">Textured Crop Fade</span>
+                                <span class="text-[10px] text-slate-500">Short top, clean skin drop fade</span>
+                            </button>
+                            <button type="button" onclick="selectPreset('Classic Side Part Quiff', '2.5-inch top, tapered sides #2 to #4, side line-up')" class="bg-slate-950 border border-slate-800 p-3 rounded-xl hover:border-purple-500 text-left transition-all">
+                                <span class="font-bold text-slate-200 block">Classic Side Part</span>
+                                <span class="text-[10px] text-slate-500">Professional, neat tapered sides</span>
+                            </button>
+                            <button type="button" onclick="selectPreset('Modern Slick Back Taper', '3-inch slick top, temple taper fade, natural neck tape')" class="bg-slate-950 border border-slate-800 p-3 rounded-xl hover:border-purple-500 text-left transition-all">
+                                <span class="font-bold text-slate-200 block">Modern Slick Back</span>
+                                <span class="text-[10px] text-slate-500">Flowing length with clean edges</span>
+                            </button>
+                            <button type="button" onclick="selectPreset('Buzz Cut with Line Up', '#3 guard uniform top, sharp edge-up lineup')" class="bg-slate-950 border border-slate-800 p-3 rounded-xl hover:border-purple-500 text-left transition-all">
+                                <span class="font-bold text-slate-200 block">Buzz Cut & Line Up</span>
+                                <span class="text-[10px] text-slate-500">Low maintenance, clean structure</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Prompt Input -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-200 mb-1">3. Or Describe Custom Hairstyle</label>
+                        <textarea id="customPrompt" rows="2" placeholder="e.g., Medium length messy waves on top with a low shadow taper fade..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-purple-500"></textarea>
+                    </div>
+
+                    <button type="button" onclick="generateHairstyle()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-purple-600/30 text-sm">
+                        ✨ Render AI Hairstyle & Barber Script
+                    </button>
+                </div>
+
+                <!-- LIVE VIDEO AR MODE -->
+                <div id="videoModeContainer" class="hidden space-y-4">
+                    <p class="text-xs text-slate-400">Preview styles directly on your live webcam feed.</p>
+                    <div class="relative bg-slate-950 rounded-2xl overflow-hidden aspect-video border border-slate-800 flex items-center justify-center">
+                        <video id="webcam" autoplay playsinline class="w-full h-full object-cover hidden"></video>
+                        <div id="webcamPlaceholder" class="text-center p-6 text-slate-500">
+                            <div class="text-3xl mb-2">📹</div>
+                            <p class="text-xs">Webcam feed inactive</p>
+                        </div>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button type="button" onclick="startWebcam()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs transition-all">
+                            Start Camera
+                        </button>
+                        <button type="button" onclick="stopWebcam()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-all">
+                            Stop Camera
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PREVIEW & BARBER SCRIPT DASHBOARD (RIGHT) -->
+            <div class="lg:col-span-6 bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-xl font-bold mb-4 text-white flex items-center justify-between">
+                        <span>AI Render & Barber Instructions</span>
+                        <span id="aiBadge" class="hidden bg-purple-500/10 text-purple-400 border border-purple-500/20 text-[10px] px-2.5 py-1 rounded-full font-bold">Ready</span>
+                    </h2>
+
+                    <!-- Empty State -->
+                    <div id="previewEmptyState" class="text-center py-16 text-slate-500">
+                        <div class="text-4xl mb-3">💈</div>
+                        <p class="text-sm">Upload a portrait or select a hairstyle preset to generate your simulation and barber script.</p>
+                    </div>
+
+                    <!-- Render Results -->
+                    <div id="previewResultContainer" class="hidden space-y-6">
+                        
+                        <!-- Images Display with Click to Zoom -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <span class="text-[10px] font-bold text-slate-400 block mb-1 uppercase tracking-wider">Original</span>
+                                <img id="originalImgPreview" onclick="openModal(this.src)" class="w-full h-36 object-cover rounded-xl border border-slate-800 bg-slate-950 cursor-pointer hover:opacity-90 transition-opacity" alt="Original Portrait">
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-bold text-purple-400 block mb-1 uppercase tracking-wider">AI Preview (Click to Zoom 🔍)</span>
+                                <div class="relative w-full h-36 rounded-xl overflow-hidden border border-purple-500/40 bg-slate-950 cursor-pointer group" onclick="openModal(document.getElementById('renderedImgPreview').src)">
+                                    <img id="renderedImgPreview" class="w-full h-36 object-cover group-hover:scale-105 transition-transform duration-200" alt="AI Generated Preview">
+                                    <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-xs text-white font-bold">
+                                        🔍 Click Fullscreen
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Target Hairstyle Title -->
+                        <div class="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3.5">
+                            <span class="text-[10px] font-bold text-purple-300 uppercase tracking-wider block mb-0.5">Selected Style</span>
+                            <h3 id="targetStyleTitle" class="text-sm font-extrabold text-white">---</h3>
+                        </div>
+
+                        <!-- Barber Script Box -->
+                        <div class="border border-slate-800 bg-slate-950 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xs font-bold text-slate-200">🗣️ Script for Your Barber</h3>
+                                <button onclick="copyScript()" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded transition-colors font-medium">
+                                    Copy Script
+                                </button>
+                            </div>
+                            <p id="barberScriptText" class="text-xs text-slate-300 leading-relaxed font-mono bg-slate-900/80 p-3 rounded-lg border border-slate-800/80 whitespace-pre-line">
+                                ---
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-slate-800/60 text-[11px] text-slate-500">
+                    💡 **Tip:** Click on the AI Preview image to enlarge it to full screen and show your barber!
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FULLSCREEN IMAGE LIGHTBOX MODAL -->
+    <div id="imageModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="closeModal()">
+        <div class="relative max-w-3xl w-full max-h-[90vh] flex flex-col items-center justify-center" onclick="event.stopPropagation()">
+            <button onclick="closeModal()" class="absolute -top-10 right-0 text-white hover:text-purple-400 text-sm font-bold bg-slate-800 px-3 py-1 rounded-lg">
+                ✕ Close (ESC)
+            </button>
+            <img id="modalImage" class="max-w-full max-h-[80vh] rounded-2xl border-2 border-purple-500/50 object-contain shadow-2xl" alt="Full Size Preview">
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+        <p>&copy; 2026 HairAI Studio. All rights reserved.</p>
+    </footer>
+
+    <!-- JS Logic -->
+    <script>
+        let selectedStyleName = "";
+        let selectedTechDetails = "";
+
+        function openModal(imageSrc) {
+            if (imageSrc && !imageSrc.includes('window.location')) {
+                document.getElementById('modalImage').src = imageSrc;
+                document.getElementById('imageModal').classList.remove('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        function switchMode(mode) {
+            const photoContainer = document.getElementById('photoModeContainer');
+            const videoContainer = document.getElementById('videoModeContainer');
+            const photoBtn = document.getElementById('modePhotoBtn');
+            const videoBtn = document.getElementById('modeVideoBtn');
+
+            if (mode === 'photo') {
+                photoContainer.classList.remove('hidden');
+                videoContainer.classList.add('hidden');
+                photoBtn.className = "px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-purple-600 text-white shadow-lg shadow-purple-600/30";
+                videoBtn.className = "px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white";
+                stopWebcam();
+            } else {
+                photoContainer.classList.add('hidden');
+                videoContainer.classList.remove('hidden');
+                videoBtn.className = "px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-purple-600 text-white shadow-lg shadow-purple-600/30";
+                photoBtn.className = "px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white";
+            }
+        }
+
+        function previewPortrait(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('originalImgPreview').src = e.target.result;
+                    document.getElementById('portraitFileName').innerText = "✓ " + input.files[0].name;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function selectPreset(name, techDetails) {
+            selectedStyleName = name;
+            selectedTechDetails = techDetails;
+            document.getElementById('customPrompt').value = name;
+        }
+
+        async function generateHairstyle() {
+            const customInput = document.getElementById('customPrompt').value.trim();
+            const photoInput = document.getElementById('userPortrait');
+
+            if (!photoInput.files || photoInput.files.length === 0) {
+                alert("Please upload a clear selfie photo first!");
+                return;
+            }
+
+            const styleName = selectedStyleName || customInput || "Custom Tailored Hairstyle";
+            const techDetails = selectedTechDetails || "Keep top textured, taper sides cleanly with soft edge line-up";
+
+            const formData = new FormData();
+            formData.append('style_prompt', styleName);
+            formData.append('tech_details', techDetails);
+            formData.append('user_portrait', photoInput.files[0]);
+
+            try {
+                document.getElementById('aiBadge').innerText = "Generating AI Hair...";
+                document.getElementById('aiBadge').classList.remove('hidden');
+
+                const response = await fetch('http://127.0.0.1:8000/api/generate-hairstyle', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    alert("Backend Error: " + (data.error || "Failed to process image with Replicate"));
+                    document.getElementById('aiBadge').innerText = "Error";
+                    return;
+                }
+
+                // Unhide results
+                document.getElementById('previewEmptyState').classList.add('hidden');
+                document.getElementById('previewResultContainer').classList.remove('hidden');
+                document.getElementById('aiBadge').innerText = "Rendered";
+
+                document.getElementById('targetStyleTitle').innerText = styleName;
+                document.getElementById('renderedImgPreview').src = data.generated_image_b64;
+                document.getElementById('barberScriptText').innerText = data.barber_script;
+
+            } catch (err) {
+                alert("Make sure your FastAPI server (main.py) is running on http://127.0.0.1:8000!");
+            }
+        }
+        function copyScript() {
+            const text = document.getElementById('barberScriptText').innerText;
+            navigator.clipboard.writeText(text);
+            alert("Barber script copied to clipboard!");
+        }
+
+        let streamInstance = null;
+        async function startWebcam() {
+            try {
+                const video = document.getElementById('webcam');
+                const placeholder = document.getElementById('webcamPlaceholder');
+                streamInstance = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = streamInstance;
+                video.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            } catch (err) {
+                alert("Unable to access webcam. Please check camera permissions.");
+            }
+        }
+
+        function stopWebcam() {
+            if (streamInstance) {
+                streamInstance.getTracks().forEach(track => track.stop());
+                document.getElementById('webcam').classList.add('hidden');
+                document.getElementById('webcamPlaceholder').classList.remove('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
