@@ -124,6 +124,7 @@ async def predict_complete(
 # HAIRSTYLE AI ENDPOINT - FREE IMAGE-TO-IMAGE HAIR EDITING
 # -------------------------------------------------------------
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "f_ZsJGbgqBcdXYiOSQDjfZUALXftjlcLApNH")
+API_URL = "https://router.huggingface.co/hf-inference/v1/images/generations"
 
 @app.post("/api/generate-hairstyle")
 async def generate_hairstyle(
@@ -145,32 +146,31 @@ async def generate_hairstyle(
         }
         
         prompt_text = (
-            f"photograph of the person from the input image with a modern {style_prompt} haircut, "
+            f"A realistic photo of the person from the input image with a modern {style_prompt} haircut, "
             f"detailed individual hair strands, natural hairline, realistic hair texture, 8k"
         )
 
         payload = {
-            "inputs": f"data:image/jpeg;base64,{input_b64}",
-            "parameters": {
-                "prompt": prompt_text,
-                "negative_prompt": "blurry, low quality, distorted face, bad hair, unrealistic",
-                "strength": 0.55
-            }
+            "model": "stabilityai/stable-diffusion-xl-base-1.0",
+            "prompt": prompt_text,
+            "negative_prompt": "blurry, low quality, distorted face, bad hair, unrealistic"
         }
 
-        HF_MODEL_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+        print(f"--> Sending request to Hugging Face Router for style: {style_prompt}...")
         
-        print(f"--> Sending request to Hugging Face model for style: {style_prompt}...")
-        response = requests.post(HF_MODEL_URL, headers=headers, json=payload, timeout=30)
-        print(f"--> Hugging Face Response Status: {response.status_code}")
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=25)
+            print(f"--> Hugging Face Response Status: {response.status_code}")
 
-        if response.status_code == 200 and len(response.content) > 1000:
-            img_bytes = response.content
-            img_base64 = base64.b64encode(img_bytes).decode("utf-8")
-            image_output = f"data:image/jpeg;base64,{img_base64}"
-            print("--> Successfully generated edited AI hair image!")
-        else:
-            print(f"--> API Error / Warning Details: {response.text}")
+            if response.status_code == 200 and len(response.content) > 1000:
+                img_bytes = response.content
+                img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+                image_output = f"data:image/jpeg;base64,{img_base64}"
+                print("--> Successfully generated edited AI hair image!")
+            else:
+                image_output = f"data:image/jpeg;base64,{input_b64}"
+        except Exception as net_err:
+            print(f"--> Network connection error: {net_err}")
             image_output = f"data:image/jpeg;base64,{input_b64}"
 
         barber_script = (
