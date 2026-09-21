@@ -3,10 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import pandas as pd
 import joblib
-from PIL import Image, ImageEnhance, ImageOps
+from PIL import Image
 import io
 import base64
 import json
+import os
+import requests
 
 app = FastAPI(title="HairAI Studio - Unified API")
 
@@ -96,21 +98,9 @@ async def predict_complete(
     }
 
 # -------------------------------------------------------------
-# HAIRSTYLE AI ENDPOINT WITH VISUAL SIMULATION OVERLAY
+# HAIRSTYLE AI ENDPOINT - FREE IMAGE-TO-IMAGE HAIR EDITING
 # -------------------------------------------------------------
-import os
-import requests
-import io
-import base64
-from PIL import Image
-from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.responses import JSONResponse
-
-# Replace with your copied Hugging Face Access Token
-import os
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "f_ZsJGbgqBcdXYiOSQDjfZUALXftjlcLApNH")
-
-# Updated Serverless Inference Router Endpoint
 API_URL = "https://router.huggingface.co/hf-inference/v1/images/generations"
 
 @app.post("/api/generate-hairstyle")
@@ -120,37 +110,41 @@ async def generate_hairstyle(
     user_portrait: UploadFile = File(...)
 ):
     try:
-        # Read uploaded image bytes
         contents = await user_portrait.read()
+        portrait_img = Image.open(io.BytesIO(contents)).convert("RGB").resize((512, 512))
+
+        buffered = io.BytesIO()
+        portrait_img.save(buffered, format="JPEG", quality=85)
+        input_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
         headers = {
             "Authorization": f"Bearer {HF_API_TOKEN}",
             "Content-Type": "application/json"
         }
         
-        prompt_text = f"A high quality realistic portrait photo of a man with a {style_prompt} haircut, detailed hair texture, sharp focus"
+        prompt_text = (
+            f"photograph of the same person from input image with identical face, skin, and eyes, "
+            f"wearing a modern {style_prompt} haircut, detailed hair texture, sharp focus"
+        )
 
         payload = {
-            "model": "stabilityai/stable-diffusion-xl-base-1.0",
-            "prompt": prompt_text,
-            "negative_prompt": "blurry, low quality, distorted, ugly"
+            "model": "runwayml/stable-diffusion-v1-5",
+            "inputs": f"data:image/jpeg;base64,{input_b64}",
+            "parameters": {
+                "prompt": prompt_text,
+                "negative_prompt": "different face, altered facial features, distorted eyes, blurry, low quality, bad anatomy",
+                "strength": 0.50
+            }
         }
 
-        # Query Hugging Face Router
-        response = requests.post(API_URL, headers=headers, json=payload)
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=25)
 
-        if response.status_code == 200:
-            # Convert binary image response to Base64
+        if response.status_code == 200 and len(response.content) > 1000:
             img_bytes = response.content
             img_base64 = base64.b64encode(img_bytes).decode("utf-8")
             image_output = f"data:image/jpeg;base64,{img_base64}"
         else:
-            # Fallback: Process original image locally if API is queuing or cold-starting
-            image = Image.open(io.BytesIO(contents)).convert("RGB").resize((512, 512))
-            buffered = io.BytesIO()
-            image.save(buffered, format="JPEG")
-            img_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-            image_output = f"data:image/jpeg;base64,{img_base64}"
+            image_output = f"data:image/jpeg;base64,{input_b64}"
 
         barber_script = (
             f"Hey! I want a '{style_prompt}'.\n\n"
