@@ -202,36 +202,182 @@
 
     <!-- JS Logic -->
     <script>
-                function captureWebcamAndEditHair() {
-            const video = document.getElementById('webcam');
-            if (!streamInstance || video.classList.contains('hidden')) {
-                alert("Please start the camera first!");
-                return;
+        let selectedStyleName = "";
+let selectedTechDetails = "";
+
+function openModal(imageSrc) {
+    if (imageSrc && !imageSrc.includes('window.location')) {
+        document.getElementById('modalImage').src = imageSrc;
+        document.getElementById('imageModal').classList.remove('hidden');
+    }
+}
+
+function closeModal() {
+    document.getElementById('imageModal').classList.add('hidden');
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+
+function switchMode(mode) {
+    const photoContainer = document.getElementById('photoModeContainer');
+    const videoContainer = document.getElementById('videoModeContainer');
+    const photoBtn = document.getElementById('modePhotoBtn');
+    const videoBtn = document.getElementById('modeVideoBtn');
+
+    if (mode === 'photo') {
+        photoContainer.classList.remove('hidden');
+        videoContainer.classList.add('hidden');
+        photoBtn.className = "px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-purple-600 text-white shadow-lg shadow-purple-600/30";
+        videoBtn.className = "px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white";
+        stopWebcam();
+    } else {
+        photoContainer.classList.add('hidden');
+        videoContainer.classList.remove('hidden');
+        videoBtn.className = "px-5 py-2.5 rounded-xl text-xs font-bold transition-all bg-purple-600 text-white shadow-lg shadow-purple-600/30";
+        photoBtn.className = "px-5 py-2.5 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white";
+    }
+}
+
+function previewPortrait(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('originalImgPreview').src = e.target.result;
+            document.getElementById('portraitFileName').innerText = "✓ " + input.files[0].name;
+
+            // Unhide preview block as soon as image is picked
+            if (document.getElementById('previewEmptyState')) {
+                document.getElementById('previewEmptyState').classList.add('hidden');
             }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth || 640;
-            canvas.height = video.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            canvas.toBlob((blob) => {
-                const file = new File([blob], "webcam_portrait.jpg", { type: "image/jpeg" });
-                const container = new DataTransfer();
-                container.items.add(file);
-
-                const photoInput = document.getElementById('userPortrait');
-                photoInput.files = container.files;
-
-                // Display local original snapshot preview
-                document.getElementById('originalImgPreview').src = canvas.toDataURL('image/jpeg');
-                document.getElementById('portraitFileName').innerText = "✓ Webcam Photo Captured";
-
-                // Switch tab back to photo mode and run AI hair edit
-                switchMode('photo');
-                generateHairstyle();
-            }, 'image/jpeg');
+            if (document.getElementById('previewResultContainer')) {
+                document.getElementById('previewResultContainer').classList.remove('hidden');
+            }
         }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function selectPreset(name, techDetails) {
+    selectedStyleName = name;
+    selectedTechDetails = techDetails;
+    document.getElementById('customPrompt').value = name;
+}
+
+async function generateHairstyle() {
+    const customInput = document.getElementById('customPrompt').value.trim();
+    const photoInput = document.getElementById('userPortrait');
+
+    if (!photoInput.files || photoInput.files.length === 0) {
+        alert("Please upload a clear selfie photo or capture one using your webcam first!");
+        return;
+    }
+
+    const styleName = selectedStyleName || customInput || "Custom Tailored Hairstyle";
+    const techDetails = selectedTechDetails || "Keep top textured, taper sides cleanly with soft edge line-up";
+
+    const formData = new FormData();
+    formData.append('style_prompt', styleName);
+    formData.append('tech_details', techDetails);
+    formData.append('user_portrait', photoInput.files[0]);
+
+    // Dynamic endpoint URL resolution (works live on Render & locally on 127.0.0.1)
+    const API_ENDPOINT = window.location.origin.includes('http') 
+        ? `${window.location.origin}/api/generate-hairstyle` 
+        : 'http://127.0.0.1:8000/api/generate-hairstyle';
+
+    try {
+        document.getElementById('aiBadge').innerText = "Generating AI Hair...";
+        document.getElementById('aiBadge').classList.remove('hidden');
+
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+            alert("Backend Error: " + (data.error || "Failed to process image generation"));
+            document.getElementById('aiBadge').innerText = "Error";
+            return;
+        }
+
+        // Unhide and display results
+        document.getElementById('previewEmptyState').classList.add('hidden');
+        document.getElementById('previewResultContainer').classList.remove('hidden');
+        document.getElementById('aiBadge').innerText = "Rendered";
+
+        document.getElementById('targetStyleTitle').innerText = styleName;
+        document.getElementById('renderedImgPreview').src = data.generated_image_b64;
+        document.getElementById('barberScriptText').innerText = data.barber_script;
+
+    } catch (err) {
+        alert("Connection Error! If running locally, check that main.py is active on http://127.0.0.1:8000.");
+    }
+}
+
+function copyScript() {
+    const text = document.getElementById('barberScriptText').innerText;
+    navigator.clipboard.writeText(text);
+    alert("Barber script copied to clipboard!");
+}
+
+let streamInstance = null;
+
+async function startWebcam() {
+    try {
+        const video = document.getElementById('webcam');
+        const placeholder = document.getElementById('webcamPlaceholder');
+        streamInstance = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = streamInstance;
+        video.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+    } catch (err) {
+        alert("Unable to access webcam. Please check camera permissions.");
+    }
+}
+
+function stopWebcam() {
+    if (streamInstance) {
+        streamInstance.getTracks().forEach(track => track.stop());
+        document.getElementById('webcam').classList.add('hidden');
+        document.getElementById('webcamPlaceholder').classList.remove('hidden');
+    }
+}
+
+// Capture live selfie snapshot directly from webcam feed and trigger AI generation
+function captureWebcamAndEditHair() {
+    const video = document.getElementById('webcam');
+    if (!streamInstance || video.classList.contains('hidden')) {
+        alert("Please start the webcam first!");
+        return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob((blob) => {
+        const file = new File([blob], "webcam_portrait.jpg", { type: "image/jpeg" });
+        const container = new DataTransfer();
+        container.items.add(file);
+
+        const photoInput = document.getElementById('userPortrait');
+        photoInput.files = container.files;
+
+        // Display local original snapshot preview
+        document.getElementById('originalImgPreview').src = canvas.toDataURL('image/jpeg');
+        document.getElementById('portraitFileName').innerText = "✓ Webcam Photo Captured";
+
+        // Switch view and trigger hairstyle generation
+        switchMode('photo');
+        generateHairstyle();
+    }, 'image/jpeg');
+}
     </script>
 </body>
 </html>
