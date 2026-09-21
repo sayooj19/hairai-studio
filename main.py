@@ -123,7 +123,7 @@ async def predict_complete(
 # -------------------------------------------------------------
 # HAIRSTYLE AI ENDPOINT - DUAL-ENGINE GENERATION
 # -------------------------------------------------------------
-HF_API_TOKEN = os.getenv("HF_API_TOKEN", "f_ZsJGbgqBcdXYiOSQDjfZUALXftjlcLApNH")
+HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
 API_URL = "https://router.huggingface.co/hf-inference/v1/images/generations"
 
 @app.post("/api/generate-hairstyle")
