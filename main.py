@@ -10,6 +10,7 @@ import json
 import os
 import requests
 import urllib.parse
+import random
 
 app = FastAPI(title="HairAI Studio - Unified API")
 
