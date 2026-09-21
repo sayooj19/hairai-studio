@@ -113,6 +113,7 @@ async def generate_hairstyle(
         contents = await user_portrait.read()
         portrait_img = Image.open(io.BytesIO(contents)).convert("RGB").resize((512, 512))
 
+        # Convert image to Base64
         buffered = io.BytesIO()
         portrait_img.save(buffered, format="JPEG", quality=85)
         input_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
@@ -123,27 +124,34 @@ async def generate_hairstyle(
         }
         
         prompt_text = (
-            f"photograph of the same person from input image with identical face, skin, and eyes, "
-            f"wearing a modern {style_prompt} haircut, detailed hair texture, sharp focus"
+            f"photograph of the person from the input image with a modern {style_prompt} haircut, "
+            f"detailed individual hair strands, natural hairline, realistic hair texture, 8k"
         )
 
+        # Standard Hugging Face Img2Img request structure
         payload = {
-            "model": "runwayml/stable-diffusion-v1-5",
             "inputs": f"data:image/jpeg;base64,{input_b64}",
             "parameters": {
                 "prompt": prompt_text,
-                "negative_prompt": "different face, altered facial features, distorted eyes, blurry, low quality, bad anatomy",
-                "strength": 0.50
+                "negative_prompt": "blurry, low quality, distorted face, bad hair, unrealistic, cartoon",
+                "strength": 0.55
             }
         }
 
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=25)
+        # Query Hugging Face model endpoint directly
+        HF_MODEL_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+        response = requests.post(HF_MODEL_URL, headers=headers, json=payload, timeout=30)
+
+        # Print response status to terminal for debugging
+        print(f"HF Status: {response.status_code}")
 
         if response.status_code == 200 and len(response.content) > 1000:
             img_bytes = response.content
             img_base64 = base64.b64encode(img_bytes).decode("utf-8")
             image_output = f"data:image/jpeg;base64,{img_base64}"
         else:
+            print(f"API Error Response: {response.text}")
+            # If API fails or is warming up, return original image
             image_output = f"data:image/jpeg;base64,{input_b64}"
 
         barber_script = (
@@ -162,4 +170,5 @@ async def generate_hairstyle(
         }
 
     except Exception as e:
+        print(f"Exception: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
