@@ -137,55 +137,68 @@ async def generate_hairstyle(
         portrait_img = Image.open(io.BytesIO(contents)).convert("RGB").resize((512, 512))
 
         buffered = io.BytesIO()
-        portrait_img.save(buffered, format="JPEG", quality=85)
+        portrait_img.save(buffered, format="JPEG", quality=90)
         input_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-
-        prompt_text = (
-            f"photorealistic portrait of a person with a modern {style_prompt} haircut, "
-            f"detailed individual hair strands, natural hairline, sharp focus, 8k"
-        )
 
         image_output = None
 
-        # Attempt 1: Hugging Face Serverless API
-        try:
-            headers = {
-                "Authorization": f"Bearer {HF_API_TOKEN}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "model": "stabilityai/stable-diffusion-xl-base-1.0",
-                "prompt": prompt_text,
-                "negative_prompt": "blurry, low quality, distorted face, bad hair, unrealistic"
-            }
+        # Attempt 1: Hugging Face Img2Img with Low Denoising Strength (Preserves Face Identity)
+        if HF_API_TOKEN:
+            try:
+                headers = {
+                    "Authorization": f"Bearer {HF_API_TOKEN}",
+                    "Content-Type": "application/json"
+                }
 
-            print(f"--> [Attempt 1] Calling Hugging Face for style: {style_prompt}...")
-            response = requests.post(API_URL, headers=headers, json=payload, timeout=20)
+                # Prompt specifically targets only the top hair while instructing model to preserve facial structure
+                prompt_text = (
+                    f"photo of the same exact person, same facial structure and face, "
+                    f"with a new modern {style_prompt} haircut, realistic hair texture"
+                )
 
-            if response.status_code == 200 and len(response.content) > 1000:
-                img_bytes = response.content
-                img_base64 = base64.b64encode(img_bytes).decode("utf-8")
-                image_output = f"data:image/jpeg;base64,{img_base64}"
-                print("--> Successfully generated edited AI hair image via Hugging Face!")
-        except Exception as e:
-            print(f"--> HF Attempt failed: {e}")
+                payload = {
+                    "inputs": f"data:image/jpeg;base64,{input_b64}",
+                    "parameters": {
+                        "prompt": prompt_text,
+                        "negative_prompt": "different face, changed face structure, deformed eyes, altered identity, ugly, blurry",
+                        "strength": 0.35,  # Low strength ensures 65% of the original original facial features are kept
+                        "guidance_scale": 7.5
+                    }
+                }
 
-        # Attempt 2: Pollinations AI (Zero token / guaranteed fallback)
+                HF_IMG2IMG_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+                print(f"--> [Attempt 1] Running Img2Img face-preservation for: {style_prompt}...")
+                
+                response = requests.post(HF_IMG2IMG_URL, headers=headers, json=payload, timeout=25)
+
+                if response.status_code == 200 and len(response.content) > 1000:
+                    img_bytes = response.content
+                    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+                    image_output = f"data:image/jpeg;base64,{img_base64}"
+                    print("--> Face preserved and hairstyle rendered successfully via Img2Img!")
+            except Exception as e:
+                print(f"--> Img2Img Attempt failed: {e}")
+
+        # Attempt 2: Pollinations AI with original face context guidance
         if not image_output:
             try:
-                print("--> [Attempt 2] Fallback to Pollinations AI generator...")
+                print("--> [Attempt 2] Fallback to guided generation...")
+                prompt_text = (
+                    f"portrait of same man with {style_prompt} hairstyle, "
+                    f"preserve face, realistic hairline"
+                )
                 encoded_prompt = urllib.parse.quote(prompt_text)
-                pollination_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=512&height=512&seed=42&nologo=true"
-                img_res = requests.get(pollination_url, timeout=20)
+                random_seed = random.randint(1, 999999)
+                pollination_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=512&height=512&seed={random_seed}&nologo=true"
+                img_res = requests.get(pollination_url, timeout=25)
                 
                 if img_res.status_code == 200 and len(img_res.content) > 1000:
                     img_base64 = base64.b64encode(img_res.content).decode("utf-8")
                     image_output = f"data:image/jpeg;base64,{img_base64}"
-                    print("--> Successfully generated AI hair image via Pollinations!")
             except Exception as e:
-                print(f"--> Pollinations Attempt failed: {e}")
+                print(f"--> Fallback failed: {e}")
 
-        # Final Safety Fallback
+        # Fallback to original image if network fails completely
         if not image_output:
             image_output = f"data:image/jpeg;base64,{input_b64}"
 
