@@ -35,7 +35,7 @@ DEFICIENCY_ANALYSIS = {
 }
 
 # -------------------------------------------------------------
-# STATIC FILE ROUTES (Fixes 404 Root Error on Deployment)
+# STATIC FILE ROUTES
 # -------------------------------------------------------------
 @app.get("/")
 async def serve_home():
@@ -122,10 +122,9 @@ async def predict_complete(
     }
 
 # -------------------------------------------------------------
-# HAIRSTYLE AI ENDPOINT - DUAL-ENGINE GENERATION
+# HAIRSTYLE AI ENDPOINT - BINARY HF + POLLINATIONS ENGINE
 # -------------------------------------------------------------
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "")
-API_URL = "https://router.huggingface.co/hf-inference/v1/images/generations"
 
 @app.post("/api/generate-hairstyle")
 async def generate_hairstyle(
@@ -139,67 +138,56 @@ async def generate_hairstyle(
 
         buffered = io.BytesIO()
         portrait_img.save(buffered, format="JPEG", quality=90)
-        input_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        img_bytes_data = buffered.getvalue()
+        input_b64 = base64.b64encode(img_bytes_data).decode("utf-8")
 
         image_output = None
 
-        # Attempt 1: Hugging Face Img2Img with Low Denoising Strength (Preserves Face Identity)
+        # Attempt 1: Hugging Face Binary Direct Upload (runwayml/stable-diffusion-v1-5)
         if HF_API_TOKEN:
             try:
                 headers = {
                     "Authorization": f"Bearer {HF_API_TOKEN}",
-                    "Content-Type": "application/json"
-                }
-
-                # Prompt specifically targets only the top hair while instructing model to preserve facial structure
-                prompt_text = (
-                    f"photo of the same exact person, same facial structure and face, "
-                    f"with a new modern {style_prompt} haircut, realistic hair texture"
-                )
-
-                payload = {
-                    "inputs": f"data:image/jpeg;base64,{input_b64}",
-                    "parameters": {
-                        "prompt": prompt_text,
-                        "negative_prompt": "different face, changed face structure, deformed eyes, altered identity, ugly, blurry",
-                        "strength": 0.35,  # Low strength ensures 65% of the original original facial features are kept
-                        "guidance_scale": 7.5
-                    }
+                    "Content-Type": "image/jpeg",
+                    "Parameters": json.dumps({
+                        "prompt": f"A realistic portrait photo with a modern {style_prompt} haircut, detailed hair strands",
+                        "negative_prompt": "different face, altered face structure, deformed, blurry",
+                        "strength": 0.4
+                    })
                 }
 
                 HF_IMG2IMG_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
-                print(f"--> [Attempt 1] Running Img2Img face-preservation for: {style_prompt}...")
+                print(f"--> [Attempt 1] Sending binary bytes to HF Img2Img for: {style_prompt}...")
                 
-                response = requests.post(HF_IMG2IMG_URL, headers=headers, json=payload, timeout=25)
+                response = requests.post(HF_IMG2IMG_URL, headers=headers, data=img_bytes_data, timeout=25)
 
                 if response.status_code == 200 and len(response.content) > 1000:
-                    img_bytes = response.content
-                    img_base64 = base64.b64encode(img_bytes).decode("utf-8")
+                    img_base64 = base64.b64encode(response.content).decode("utf-8")
                     image_output = f"data:image/jpeg;base64,{img_base64}"
-                    print("--> Face preserved and hairstyle rendered successfully via Img2Img!")
+                    print("--> Hairstyle rendered successfully via HF Binary Stream!")
+                else:
+                    print(f"--> HF Response Error [{response.status_code}]: {response.text}")
             except Exception as e:
-                print(f"--> Img2Img Attempt failed: {e}")
+                print(f"--> HF Img2Img Attempt failed: {e}")
 
-        # Attempt 2: Pollinations AI with original face context guidance
+        # Attempt 2: Pollinations AI Fallback with randomized seed
         if not image_output:
             try:
-                print("--> [Attempt 2] Fallback to guided generation...")
-                prompt_text = (
-                    f"portrait of same man with {style_prompt} hairstyle, "
-                    f"preserve face, realistic hairline"
-                )
+                print("--> [Attempt 2] Fallback to Pollinations AI generation...")
+                prompt_text = f"photorealistic portrait photo of a man with a fresh {style_prompt} haircut, realistic hair texture, 8k, sharp focus"
                 encoded_prompt = urllib.parse.quote(prompt_text)
-                random_seed = random.randint(1, 999999)
+                random_seed = random.randint(1000, 999999)
                 pollination_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=512&height=512&seed={random_seed}&nologo=true"
-                img_res = requests.get(pollination_url, timeout=25)
                 
+                img_res = requests.get(pollination_url, timeout=25)
                 if img_res.status_code == 200 and len(img_res.content) > 1000:
                     img_base64 = base64.b64encode(img_res.content).decode("utf-8")
                     image_output = f"data:image/jpeg;base64,{img_base64}"
+                    print("--> New hairstyle generated successfully via Pollinations!")
             except Exception as e:
-                print(f"--> Fallback failed: {e}")
+                print(f"--> Pollinations Fallback failed: {e}")
 
-        # Fallback to original image if network fails completely
+        # Final Fallback to raw uploaded image if all external APIs fail
         if not image_output:
             image_output = f"data:image/jpeg;base64,{input_b64}"
 
