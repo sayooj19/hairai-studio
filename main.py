@@ -1,6 +1,7 @@
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import pandas as pd
 import joblib
 from PIL import Image
@@ -32,6 +33,28 @@ DEFICIENCY_ANALYSIS = {
     "Omega-3 fatty acids": {"risk_boost": 6, "advice": "Include flaxseeds, walnuts, or fish oil supplements."}
 }
 
+# -------------------------------------------------------------
+# STATIC FILE ROUTES (Fixes 404 on Root / Deployment)
+# -------------------------------------------------------------
+@app.get("/")
+async def serve_home():
+    return FileResponse("index.html")
+
+@app.get("/index.html")
+async def serve_index():
+    return FileResponse("index.html")
+
+@app.get("/diagnosis.html")
+async def serve_diagnosis():
+    return FileResponse("diagnosis.html")
+
+@app.get("/hairstyle.html")
+async def serve_hairstyle():
+    return FileResponse("hairstyle.html")
+
+# -------------------------------------------------------------
+# DIAGNOSIS API ENDPOINT
+# -------------------------------------------------------------
 @app.post("/api/predict-complete")
 async def predict_complete(
     data_json: str = Form(...),
@@ -101,7 +124,6 @@ async def predict_complete(
 # HAIRSTYLE AI ENDPOINT - FREE IMAGE-TO-IMAGE HAIR EDITING
 # -------------------------------------------------------------
 HF_API_TOKEN = os.getenv("HF_API_TOKEN", "f_ZsJGbgqBcdXYiOSQDjfZUALXftjlcLApNH")
-API_URL = "https://router.huggingface.co/hf-inference/v1/images/generations"
 
 @app.post("/api/generate-hairstyle")
 async def generate_hairstyle(
@@ -113,7 +135,6 @@ async def generate_hairstyle(
         contents = await user_portrait.read()
         portrait_img = Image.open(io.BytesIO(contents)).convert("RGB").resize((512, 512))
 
-        # Convert image to Base64
         buffered = io.BytesIO()
         portrait_img.save(buffered, format="JPEG", quality=85)
         input_b64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
@@ -128,30 +149,28 @@ async def generate_hairstyle(
             f"detailed individual hair strands, natural hairline, realistic hair texture, 8k"
         )
 
-        # Standard Hugging Face Img2Img request structure
         payload = {
             "inputs": f"data:image/jpeg;base64,{input_b64}",
             "parameters": {
                 "prompt": prompt_text,
-                "negative_prompt": "blurry, low quality, distorted face, bad hair, unrealistic, cartoon",
+                "negative_prompt": "blurry, low quality, distorted face, bad hair, unrealistic",
                 "strength": 0.55
             }
         }
 
-        # Query Hugging Face model endpoint directly
         HF_MODEL_URL = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+        
+        print(f"--> Sending request to Hugging Face model for style: {style_prompt}...")
         response = requests.post(HF_MODEL_URL, headers=headers, json=payload, timeout=30)
-
-        # Print response status to terminal for debugging
-        print(f"HF Status: {response.status_code}")
+        print(f"--> Hugging Face Response Status: {response.status_code}")
 
         if response.status_code == 200 and len(response.content) > 1000:
             img_bytes = response.content
             img_base64 = base64.b64encode(img_bytes).decode("utf-8")
             image_output = f"data:image/jpeg;base64,{img_base64}"
+            print("--> Successfully generated edited AI hair image!")
         else:
-            print(f"API Error Response: {response.text}")
-            # If API fails or is warming up, return original image
+            print(f"--> API Error / Warning Details: {response.text}")
             image_output = f"data:image/jpeg;base64,{input_b64}"
 
         barber_script = (
@@ -170,5 +189,5 @@ async def generate_hairstyle(
         }
 
     except Exception as e:
-        print(f"Exception: {e}")
+        print(f"--> Backend Exception: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
